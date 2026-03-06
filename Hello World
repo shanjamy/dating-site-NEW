@@ -1,0 +1,2009 @@
+// @ts-nocheck
+import { useState, useEffect, useRef } from "react";
+
+// ─── THEME ───────────────────────────────────────────────────────────────────
+const T = {
+  bg: "#0A0A0F",
+  bgCard: "rgba(255,255,255,0.04)",
+  bgGlass: "rgba(255,255,255,0.06)",
+  border: "rgba(255,255,255,0.08)",
+  neon: "#8B5CF6",
+  neonSoft: "rgba(139,92,246,0.18)",
+  neonGlow: "rgba(139,92,246,0.4)",
+  pink: "#EC4899",
+  pinkSoft: "rgba(236,72,153,0.18)",
+  teal: "#06B6D4",
+  text: "#F8FAFC",
+  textMuted: "rgba(248,250,252,0.45)",
+  textSub: "rgba(248,250,252,0.65)",
+  green: "#10B981",
+  red: "#EF4444",
+  amber: "#F59E0B",
+};
+
+// ─── GLOBAL STYLES ────────────────────────────────────────────────────────────
+const globalCSS = `
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { background: #0A0A0F; font-family: 'DM Sans', sans-serif; color: #F8FAFC; overflow: hidden; }
+  ::-webkit-scrollbar { width: 0; }
+  @keyframes pulse-neon {
+    0%, 100% { box-shadow: 0 0 20px rgba(139,92,246,0.3), 0 0 60px rgba(139,92,246,0.1); }
+    50% { box-shadow: 0 0 30px rgba(139,92,246,0.6), 0 0 80px rgba(139,92,246,0.2); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateX(32px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.88); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes ripple {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(4); opacity: 0; }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes ping {
+    0% { transform: scale(1); opacity: 1; }
+    75%, 100% { transform: scale(2); opacity: 0; }
+  }
+  @keyframes logoReveal {
+    0% { opacity: 0; transform: scale(0.5) rotate(-10deg); }
+    60% { transform: scale(1.1) rotate(2deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+  @keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  @keyframes cardSwipeLeft {
+    to { transform: translateX(-120%) rotate(-20deg); opacity: 0; }
+  }
+  @keyframes cardSwipeRight {
+    to { transform: translateX(120%) rotate(20deg); opacity: 0; }
+  }
+  @keyframes messageIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .anim-fade-up { animation: fadeSlideUp 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+  .anim-fade-in { animation: fadeSlideIn 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+  .anim-scale-in { animation: scaleIn 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+  .anim-logo { animation: logoReveal 0.8s cubic-bezier(0.22,1,0.36,1) both; }
+  .btn-press { transition: transform 0.12s ease, opacity 0.12s ease; }
+  .btn-press:active { transform: scale(0.95); opacity: 0.85; }
+  input, textarea { outline: none; background: none; border: none; color: #F8FAFC; font-family: 'DM Sans', sans-serif; }
+  input::placeholder, textarea::placeholder { color: rgba(248,250,252,0.3); }
+`;
+
+// ─── COMPONENTS ───────────────────────────────────────────────────────────────
+
+const GlassCard = ({ children, style, onClick, className = "" }) => (
+  <div
+    onClick={onClick}
+    className={`btn-press ${className}`}
+    style={{
+      background: "rgba(255,255,255,0.05)",
+      backdropFilter: "blur(20px)",
+      WebkitBackdropFilter: "blur(20px)",
+      border: "1px solid rgba(255,255,255,0.09)",
+      borderRadius: 20,
+      ...style,
+    }}
+  >
+    {children}
+  </div>
+);
+
+const NeonButton = ({ children, onClick, style, variant = "primary", disabled }) => {
+  const isPrimary = variant === "primary";
+  const isOutline = variant === "outline";
+  const isDanger = variant === "danger";
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="btn-press"
+      style={{
+        width: "100%",
+        padding: "16px 24px",
+        borderRadius: 16,
+        border: isOutline ? `1px solid ${T.border}` : "none",
+        background: isPrimary
+          ? `linear-gradient(135deg, ${T.neon}, #6D28D9)`
+          : isDanger
+          ? `linear-gradient(135deg, ${T.red}, #B91C1C)`
+          : "rgba(255,255,255,0.05)",
+        color: T.text,
+        fontSize: 16,
+        fontWeight: 600,
+        fontFamily: "'DM Sans', sans-serif",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
+        boxShadow: isPrimary ? `0 4px 30px ${T.neonGlow}` : "none",
+        letterSpacing: "0.01em",
+        ...style,
+      }}
+    >
+      {children}
+    </button>
+  );
+};
+
+const Badge = ({ children, color = T.neon, style }) => (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 4,
+      padding: "4px 10px",
+      borderRadius: 20,
+      background: `${color}22`,
+      border: `1px solid ${color}44`,
+      color,
+      fontSize: 11,
+      fontWeight: 600,
+      letterSpacing: "0.04em",
+      ...style,
+    }}
+  >
+    {children}
+  </span>
+);
+
+const Avatar = ({ seed, size = 48, blur, verified, active }) => {
+  const colors = [
+    ["#7C3AED", "#EC4899"],
+    ["#0891B2", "#8B5CF6"],
+    ["#D97706", "#EF4444"],
+    ["#059669", "#0891B2"],
+    ["#DB2777", "#7C3AED"],
+  ];
+  const [c1, c2] = colors[seed % colors.length];
+  const initials = ["AR", "SK", "PM", "NR", "VK", "AS", "RD", "MG"][seed % 8];
+  return (
+    <div style={{ position: "relative", display: "inline-flex", flexShrink: 0 }}>
+      <div
+        style={{
+          width: size,
+          height: size,
+          borderRadius: "50%",
+          background: `linear-gradient(135deg, ${c1}, ${c2})`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: size * 0.3,
+          fontWeight: 700,
+          color: "#fff",
+          filter: blur ? "blur(8px)" : "none",
+          fontFamily: "'Syne', sans-serif",
+          flexShrink: 0,
+        }}
+      >
+        {!blur && initials}
+      </div>
+      {active && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 2,
+            right: 2,
+            width: size * 0.22,
+            height: size * 0.22,
+            borderRadius: "50%",
+            background: T.green,
+            border: `2px solid ${T.bg}`,
+          }}
+        />
+      )}
+      {verified && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: -2,
+            right: -2,
+            width: 18,
+            height: 18,
+            borderRadius: "50%",
+            background: T.neon,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 9,
+            border: `2px solid ${T.bg}`,
+          }}
+        >
+          ✓
+        </div>
+      )}
+    </div>
+  );
+};
+
+const TabBar = ({ tab, setTab }) => {
+  const tabs = [
+    { id: "discover", icon: "✦", label: "Discover" },
+    { id: "requests", icon: "◎", label: "Requests" },
+    { id: "chat", icon: "◈", label: "Chat" },
+    { id: "profile", icon: "◉", label: "Profile" },
+  ];
+  return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 80,
+        background: "rgba(10,10,15,0.92)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        borderTop: "1px solid rgba(255,255,255,0.07)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-around",
+        padding: "0 8px 8px",
+        zIndex: 100,
+      }}
+    >
+      {tabs.map((t) => (
+        <button
+          key={t.id}
+          className="btn-press"
+          onClick={() => setTab(t.id)}
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: "8px 0",
+            position: "relative",
+          }}
+        >
+          {tab === t.id && (
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 32,
+                height: 2,
+                borderRadius: 2,
+                background: T.neon,
+                boxShadow: `0 0 8px ${T.neonGlow}`,
+              }}
+            />
+          )}
+          <span style={{ fontSize: 18, filter: tab === t.id ? `drop-shadow(0 0 6px ${T.neon})` : "none" }}>
+            {t.icon}
+          </span>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 500,
+              color: tab === t.id ? T.neon : T.textMuted,
+              letterSpacing: "0.05em",
+            }}
+          >
+            {t.label}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+// ─── SCREENS ──────────────────────────────────────────────────────────────────
+
+// SPLASH
+const SplashScreen = ({ onDone }) => {
+  useEffect(() => {
+    const t = setTimeout(onDone, 2400);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: T.bg,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 20,
+      }}
+    >
+      {/* Ambient glow */}
+      <div
+        style={{
+          position: "absolute",
+          width: 300,
+          height: 300,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${T.neonGlow} 0%, transparent 70%)`,
+          filter: "blur(40px)",
+          animation: "pulse-neon 2s infinite",
+        }}
+      />
+      <div className="anim-logo" style={{ position: "relative", zIndex: 1 }}>
+        <div
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: 28,
+            background: `linear-gradient(135deg, ${T.neon}, ${T.pink})`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 48,
+            boxShadow: `0 0 40px ${T.neonGlow}, 0 0 80px ${T.neonSoft}`,
+            animation: "float 3s ease-in-out infinite",
+          }}
+        >
+          ✦
+        </div>
+      </div>
+      <div className="anim-fade-up" style={{ textAlign: "center", animationDelay: "0.4s", position: "relative", zIndex: 1 }}>
+        <div
+          style={{
+            fontFamily: "'Syne', sans-serif",
+            fontSize: 36,
+            fontWeight: 800,
+            background: `linear-gradient(135deg, #fff 0%, ${T.neon} 60%, ${T.pink} 100%)`,
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundSize: "200% 200%",
+            animation: "gradientShift 3s ease infinite",
+          }}
+        >
+          AURA
+        </div>
+        <div style={{ color: T.textMuted, fontSize: 13, letterSpacing: "0.2em", marginTop: 4 }}>
+          DISCOVER · CONNECT · VIBE
+        </div>
+      </div>
+      <div
+        className="anim-fade-up"
+        style={{
+          animationDelay: "0.8s",
+          display: "flex",
+          gap: 6,
+          position: "relative",
+          zIndex: 1,
+          marginTop: 20,
+        }}
+      >
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            style={{
+              width: i === 1 ? 24 : 8,
+              height: 8,
+              borderRadius: 4,
+              background: i === 1 ? T.neon : T.border,
+              transition: "all 0.3s ease",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// WELCOME
+const WelcomeScreen = ({ onSignup, onLogin }) => (
+  <div
+    style={{
+      position: "absolute",
+      inset: 0,
+      background: T.bg,
+      display: "flex",
+      flexDirection: "column",
+      overflow: "hidden",
+    }}
+  >
+    {/* Top visual */}
+    <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `linear-gradient(180deg, transparent 40%, ${T.bg} 100%)`,
+          zIndex: 2,
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: -60,
+          left: -60,
+          width: 300,
+          height: 300,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${T.neonSoft}, transparent 70%)`,
+          filter: "blur(40px)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          top: 40,
+          right: -40,
+          width: 220,
+          height: 220,
+          borderRadius: "50%",
+          background: `radial-gradient(circle, ${T.pinkSoft}, transparent 70%)`,
+          filter: "blur(40px)",
+        }}
+      />
+      {/* Floating cards */}
+      {[
+        { top: 60, left: 20, seed: 0, rotate: -8, delay: "0s" },
+        { top: 100, right: 20, seed: 2, rotate: 6, delay: "0.15s" },
+        { top: 200, left: 60, seed: 4, rotate: 4, delay: "0.3s" },
+      ].map((c, i) => (
+        <div
+          key={i}
+          className="anim-scale-in"
+          style={{
+            position: "absolute",
+            top: c.top,
+            left: c.left,
+            right: c.right,
+            animationDelay: c.delay,
+            transform: `rotate(${c.rotate}deg)`,
+            animation: `float ${3 + i * 0.5}s ease-in-out infinite`,
+          }}
+        >
+          <GlassCard style={{ padding: 12, display: "flex", alignItems: "center", gap: 10 }}>
+            <Avatar seed={c.seed} size={44} verified active />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 600 }}>24 · ✦ Verified</div>
+              <div style={{ fontSize: 11, color: T.textMuted }}>Music · Art · Travel</div>
+            </div>
+          </GlassCard>
+        </div>
+      ))}
+    </div>
+
+    {/* Bottom content */}
+    <div
+      style={{ padding: "0 28px 48px", display: "flex", flexDirection: "column", gap: 16 }}
+      className="anim-fade-up"
+    >
+      <div>
+        <div
+          style={{
+            fontFamily: "'Syne', sans-serif",
+            fontSize: 34,
+            fontWeight: 800,
+            lineHeight: 1.15,
+            marginBottom: 10,
+          }}
+        >
+          Find your{" "}
+          <span
+            style={{
+              background: `linear-gradient(135deg, ${T.neon}, ${T.pink})`,
+              WebkitBackgroundClip: "text",
+              WebkitTextFillColor: "transparent",
+            }}
+          >
+            vibe
+          </span>
+          <br />
+          nearby
+        </div>
+        <div style={{ color: T.textSub, fontSize: 15, lineHeight: 1.6 }}>
+          Discover real people around you. Connect anonymously. Reveal when ready.
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 12, marginTop: 4 }}>
+        {[{ icon: "🔒", label: "Private" }, { icon: "✦", label: "AI Verified" }, { icon: "⚡", label: "Nearby" }].map(
+          (f) => (
+            <div
+              key={f.label}
+              style={{
+                flex: 1,
+                padding: "10px 6px",
+                borderRadius: 12,
+                background: T.bgGlass,
+                border: `1px solid ${T.border}`,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 4,
+              }}
+            >
+              <span style={{ fontSize: 16 }}>{f.icon}</span>
+              <span style={{ fontSize: 10, color: T.textMuted, fontWeight: 500 }}>{f.label}</span>
+            </div>
+          )
+        )}
+      </div>
+      <NeonButton onClick={onSignup} style={{ marginTop: 8 }}>
+        Get Started — It's Free
+      </NeonButton>
+      <NeonButton onClick={onLogin} variant="outline">
+        I already have an account
+      </NeonButton>
+    </div>
+  </div>
+);
+
+// OTP SCREEN
+const OTPScreen = ({ onNext }) => {
+  const [phone, setPhone] = useState("");
+  const [step, setStep] = useState("phone"); // phone | otp
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [sending, setSending] = useState(false);
+  const refs = useRef([]);
+
+  const sendOTP = () => {
+    setSending(true);
+    setTimeout(() => {
+      setSending(false);
+      setStep("otp");
+    }, 1200);
+  };
+
+  const handleOtp = (val, idx) => {
+    const d = [...otp];
+    d[idx] = val.slice(-1);
+    setOtp(d);
+    if (val && idx < 5) refs.current[idx + 1]?.focus();
+    if (d.every((v) => v) && idx === 5) setTimeout(onNext, 400);
+  };
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: T.bg, padding: "60px 28px 40px", display: "flex", flexDirection: "column" }}>
+      <div className="anim-fade-up">
+        <div style={{ fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 700, marginBottom: 8 }}>
+          {step === "phone" ? "Your number 📱" : "Verify OTP 🔐"}
+        </div>
+        <div style={{ color: T.textMuted, fontSize: 14, marginBottom: 32 }}>
+          {step === "phone"
+            ? "We'll send a one-time code to verify your identity"
+            : `Code sent to +91 ${phone}`}
+        </div>
+
+        {step === "phone" ? (
+          <>
+            <GlassCard style={{ padding: "4px 16px", display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+              <span style={{ color: T.textMuted, fontSize: 14, whiteSpace: "nowrap" }}>🇮🇳 +91</span>
+              <div style={{ width: 1, height: 24, background: T.border }} />
+              <input
+                type="tel"
+                placeholder="Enter mobile number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                style={{ flex: 1, fontSize: 16, padding: "14px 0" }}
+                maxLength={10}
+              />
+            </GlassCard>
+            <NeonButton onClick={sendOTP} disabled={phone.length < 10 || sending}>
+              {sending ? "Sending..." : "Send OTP"}
+            </NeonButton>
+          </>
+        ) : (
+          <>
+            <div style={{ display: "flex", gap: 10, marginBottom: 28 }}>
+              {otp.map((v, i) => (
+                <input
+                  key={i}
+                  ref={(r) => (refs.current[i] = r)}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={v}
+                  onChange={(e) => handleOtp(e.target.value, i)}
+                  style={{
+                    flex: 1,
+                    height: 56,
+                    textAlign: "center",
+                    fontSize: 22,
+                    fontWeight: 700,
+                    borderRadius: 14,
+                    background: v ? T.neonSoft : T.bgGlass,
+                    border: `1px solid ${v ? T.neon : T.border}`,
+                    color: T.text,
+                    boxShadow: v ? `0 0 12px ${T.neonSoft}` : "none",
+                    transition: "all 0.2s ease",
+                  }}
+                />
+              ))}
+            </div>
+            <div style={{ textAlign: "center", color: T.textMuted, fontSize: 13, marginBottom: 24 }}>
+              Didn't receive?{" "}
+              <span style={{ color: T.neon, fontWeight: 600 }}>Resend in 30s</span>
+            </div>
+            <NeonButton onClick={onNext} disabled={!otp.every((v) => v)}>
+              Verify & Continue
+            </NeonButton>
+          </>
+        )}
+      </div>
+
+      {/* Trust indicators */}
+      <div
+        style={{
+          marginTop: "auto",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "14px 16px",
+          borderRadius: 14,
+          background: T.bgGlass,
+          border: `1px solid ${T.border}`,
+        }}
+      >
+        <span style={{ fontSize: 18 }}>🔒</span>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600 }}>End-to-end encrypted</div>
+          <div style={{ fontSize: 11, color: T.textMuted }}>Your data is protected under Indian IT Act</div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// FACE VERIFICATION
+const FaceVerifyScreen = ({ onNext }) => {
+  const [step, setStep] = useState("intro"); // intro | scanning | done
+  const [progress, setProgress] = useState(0);
+
+  const startScan = () => {
+    setStep("scanning");
+    let p = 0;
+    const iv = setInterval(() => {
+      p += 2;
+      setProgress(p);
+      if (p >= 100) {
+        clearInterval(iv);
+        setStep("done");
+      }
+    }, 40);
+  };
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: T.bg, padding: "60px 28px 48px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div className="anim-fade-up" style={{ width: "100%", textAlign: "center" }}>
+        <div style={{ fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 700, marginBottom: 8 }}>
+          Face Verification 🤳
+        </div>
+        <div style={{ color: T.textMuted, fontSize: 14, marginBottom: 36 }}>
+          Prove you're real. One-time verification keeps Aura fake-free.
+        </div>
+
+        {/* Camera frame */}
+        <div style={{ position: "relative", width: 220, height: 280, margin: "0 auto 36px" }}>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: 28,
+              background: step === "done" ? `${T.green}22` : step === "scanning" ? T.neonSoft : T.bgGlass,
+              border: `2px solid ${step === "done" ? T.green : step === "scanning" ? T.neon : T.border}`,
+              overflow: "hidden",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.4s ease",
+              boxShadow: step === "scanning" ? `0 0 40px ${T.neonGlow}` : "none",
+            }}
+          >
+            {step === "intro" && (
+              <div style={{ fontSize: 64, opacity: 0.3 }}>👤</div>
+            )}
+            {step === "scanning" && (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🤳</div>
+                <div style={{ fontSize: 12, color: T.neon }}>Analyzing...</div>
+              </div>
+            )}
+            {step === "done" && (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 8 }}>✅</div>
+                <div style={{ fontSize: 13, color: T.green, fontWeight: 600 }}>Verified!</div>
+              </div>
+            )}
+
+            {/* Scanning line */}
+            {step === "scanning" && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  height: 2,
+                  background: `linear-gradient(90deg, transparent, ${T.neon}, transparent)`,
+                  top: `${progress}%`,
+                  boxShadow: `0 0 8px ${T.neon}`,
+                  transition: "top 0.04s linear",
+                }}
+              />
+            )}
+          </div>
+
+          {/* Corner brackets */}
+          {["tl", "tr", "bl", "br"].map((pos) => (
+            <div
+              key={pos}
+              style={{
+                position: "absolute",
+                width: 20,
+                height: 20,
+                top: pos.includes("t") ? -1 : "auto",
+                bottom: pos.includes("b") ? -1 : "auto",
+                left: pos.includes("l") ? -1 : "auto",
+                right: pos.includes("r") ? -1 : "auto",
+                borderTop: pos.includes("t") ? `3px solid ${T.neon}` : "none",
+                borderBottom: pos.includes("b") ? `3px solid ${T.neon}` : "none",
+                borderLeft: pos.includes("l") ? `3px solid ${T.neon}` : "none",
+                borderRight: pos.includes("r") ? `3px solid ${T.neon}` : "none",
+                borderRadius: pos === "tl" ? "12px 0 0 0" : pos === "tr" ? "0 12px 0 0" : pos === "bl" ? "0 0 0 12px" : "0 0 12px 0",
+              }}
+            />
+          ))}
+        </div>
+
+        {/* Progress bar */}
+        {step === "scanning" && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ height: 4, borderRadius: 4, background: T.bgGlass, overflow: "hidden", marginBottom: 8 }}>
+              <div
+                style={{
+                  height: "100%",
+                  width: `${progress}%`,
+                  borderRadius: 4,
+                  background: `linear-gradient(90deg, ${T.neon}, ${T.pink})`,
+                  transition: "width 0.04s linear",
+                }}
+              />
+            </div>
+            <div style={{ fontSize: 12, color: T.textMuted }}>Running liveness + face detection...</div>
+          </div>
+        )}
+
+        {/* Actions */}
+        {step === "intro" && (
+          <>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+              {["✓ No duplicate detection", "✓ Liveness check (blink test)", "✓ Stored encrypted, never shared"].map((t) => (
+                <div key={t} style={{ fontSize: 13, color: T.textSub, textAlign: "left", paddingLeft: 8 }}>{t}</div>
+              ))}
+            </div>
+            <NeonButton onClick={startScan}>Start Face Scan</NeonButton>
+          </>
+        )}
+        {step === "done" && (
+          <NeonButton onClick={onNext} style={{ background: `linear-gradient(135deg, ${T.green}, #059669)`, boxShadow: `0 4px 30px rgba(16,185,129,0.4)` }}>
+            Continue →
+          </NeonButton>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// BASIC INFO
+const BasicInfoScreen = ({ onNext }) => {
+  const [step, setStep] = useState(0);
+  const [info, setInfo] = useState({ name: "", age: "", gender: "", bio: "" });
+  const [interests, setInterests] = useState([]);
+  const allInterests = ["Music 🎵", "Art 🎨", "Travel ✈️", "Coffee ☕", "Gaming 🎮", "Fitness 💪", "Food 🍜", "Books 📚", "Photography 📸", "Dance 💃", "Tech 💻", "Movies 🎬"];
+
+  const toggleInterest = (i) => {
+    setInterests((prev) => (prev.includes(i) ? prev.filter((x) => x !== i) : [...prev, i]));
+  };
+
+  const steps = ["Name & Age", "Gender", "Interests", "Bio"];
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: T.bg, padding: "56px 28px 40px", display: "flex", flexDirection: "column" }}>
+      {/* Progress */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 32 }}>
+        {steps.map((_, i) => (
+          <div key={i} style={{ flex: 1, height: 3, borderRadius: 3, background: i <= step ? T.neon : T.border, transition: "background 0.3s ease" }} />
+        ))}
+      </div>
+
+      <div className="anim-fade-in" key={step} style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <div style={{ fontSize: 22, fontFamily: "'Syne', sans-serif", fontWeight: 700, marginBottom: 6 }}>
+          {["Tell us your name 👋", "Your gender", "What's your vibe? ⚡", "About you ✍️"][step]}
+        </div>
+        <div style={{ color: T.textMuted, fontSize: 13, marginBottom: 28 }}>
+          {["This stays private until you match.", "Shown as age range, never exactly.", "Pick interests — used for matching.", "Keep it short and genuine."][step]}
+        </div>
+
+        {step === 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <GlassCard style={{ padding: "4px 16px" }}>
+              <input
+                placeholder="Your first name"
+                value={info.name}
+                onChange={(e) => setInfo({ ...info, name: e.target.value })}
+                style={{ fontSize: 16, padding: "14px 0", width: "100%" }}
+              />
+            </GlassCard>
+            <GlassCard style={{ padding: "4px 16px" }}>
+              <input
+                placeholder="Your age"
+                type="number"
+                value={info.age}
+                onChange={(e) => setInfo({ ...info, age: e.target.value })}
+                style={{ fontSize: 16, padding: "14px 0", width: "100%" }}
+              />
+            </GlassCard>
+          </div>
+        )}
+
+        {step === 1 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {["Man", "Woman", "Non-binary", "Prefer not to say"].map((g) => (
+              <GlassCard
+                key={g}
+                onClick={() => setInfo({ ...info, gender: g })}
+                style={{
+                  padding: "16px 20px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  cursor: "pointer",
+                  border: `1px solid ${info.gender === g ? T.neon : T.border}`,
+                  background: info.gender === g ? T.neonSoft : T.bgGlass,
+                }}
+              >
+                <span style={{ fontSize: 15 }}>{g}</span>
+                {info.gender === g && <span style={{ color: T.neon }}>✓</span>}
+              </GlassCard>
+            ))}
+          </div>
+        )}
+
+        {step === 2 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {allInterests.map((i) => (
+              <button
+                key={i}
+                onClick={() => toggleInterest(i)}
+                className="btn-press"
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: 24,
+                  border: `1px solid ${interests.includes(i) ? T.neon : T.border}`,
+                  background: interests.includes(i) ? T.neonSoft : T.bgGlass,
+                  color: interests.includes(i) ? T.neon : T.textSub,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  fontFamily: "'DM Sans', sans-serif",
+                }}
+              >
+                {i}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {step === 3 && (
+          <GlassCard style={{ padding: "16px" }}>
+            <textarea
+              placeholder="Hey! I'm someone who loves discovering new places and people. Always up for a good conversation or spontaneous adventure..."
+              value={info.bio}
+              onChange={(e) => setInfo({ ...info, bio: e.target.value })}
+              rows={5}
+              style={{ fontSize: 14, lineHeight: 1.7, width: "100%", resize: "none", color: T.text }}
+            />
+            <div style={{ textAlign: "right", fontSize: 11, color: T.textMuted, marginTop: 8 }}>
+              {info.bio.length}/150
+            </div>
+          </GlassCard>
+        )}
+      </div>
+
+      <NeonButton
+        onClick={() => (step < 3 ? setStep(step + 1) : onNext())}
+        disabled={
+          (step === 0 && (!info.name || !info.age)) ||
+          (step === 1 && !info.gender) ||
+          (step === 2 && interests.length < 2)
+        }
+        style={{ marginTop: 24 }}
+      >
+        {step < 3 ? "Continue" : "Let's go! 🚀"}
+      </NeonButton>
+    </div>
+  );
+};
+
+// PRIVACY PREFS
+const PrivacyScreen = ({ onNext }) => {
+  const [invisible, setInvisible] = useState(false);
+  const [locationSpecific, setLocationSpecific] = useState(false);
+  const [autoDelete, setAutoDelete] = useState(false);
+
+  const Toggle = ({ value, onChange, label, sub }) => (
+    <GlassCard
+      style={{ padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }}
+      onClick={() => onChange(!value)}
+    >
+      <div>
+        <div style={{ fontSize: 14, fontWeight: 500 }}>{label}</div>
+        <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>{sub}</div>
+      </div>
+      <div
+        style={{
+          width: 48,
+          height: 28,
+          borderRadius: 14,
+          background: value ? T.neon : T.bgGlass,
+          border: `1px solid ${value ? T.neon : T.border}`,
+          position: "relative",
+          transition: "all 0.25s ease",
+          boxShadow: value ? `0 0 12px ${T.neonSoft}` : "none",
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            top: 3,
+            left: value ? 23 : 3,
+            width: 20,
+            height: 20,
+            borderRadius: "50%",
+            background: "#fff",
+            transition: "left 0.25s ease",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.3)",
+          }}
+        />
+      </div>
+    </GlassCard>
+  );
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: T.bg, padding: "60px 28px 48px", display: "flex", flexDirection: "column" }}>
+      <div className="anim-fade-up">
+        <div style={{ fontSize: 28, fontFamily: "'Syne', sans-serif", fontWeight: 700, marginBottom: 8 }}>
+          Your privacy 🔐
+        </div>
+        <div style={{ color: T.textMuted, fontSize: 14, marginBottom: 32 }}>
+          You're in full control. Change anytime in settings.
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <Toggle
+            value={invisible}
+            onChange={setInvisible}
+            label="Invisible Mode"
+            sub="Browse without appearing in others' discovery"
+          />
+          <Toggle
+            value={locationSpecific}
+            onChange={setLocationSpecific}
+            label="Location-specific Visibility"
+            sub="Only appear when at saved places"
+          />
+          <Toggle
+            value={autoDelete}
+            onChange={setAutoDelete}
+            label="Auto-delete Account"
+            sub="Erase all data if inactive for 6 months"
+          />
+        </div>
+
+        <GlassCard style={{ padding: 16, marginTop: 16, display: "flex", gap: 12, alignItems: "flex-start" }}>
+          <span style={{ fontSize: 20 }}>🛡️</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>Location fuzzing enabled</div>
+            <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5 }}>
+              Your exact GPS is never shared. Others see approximate distance only (e.g., "~200m").
+            </div>
+          </div>
+        </GlassCard>
+
+        <NeonButton onClick={onNext} style={{ marginTop: 32 }}>
+          Continue
+        </NeonButton>
+      </div>
+    </div>
+  );
+};
+
+// LOCATION PERMISSION
+const LocationScreen = ({ onNext }) => (
+  <div style={{ position: "absolute", inset: 0, background: T.bg, padding: "60px 28px 48px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+    <div className="anim-fade-up" style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}>
+      <div
+        style={{
+          width: 140,
+          height: 140,
+          borderRadius: "50%",
+          background: T.neonSoft,
+          border: `2px solid ${T.neon}`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 60,
+          marginBottom: 36,
+          animation: "pulse-neon 2s infinite",
+          boxShadow: `0 0 40px ${T.neonGlow}`,
+        }}
+      >
+        📍
+      </div>
+
+      <div style={{ fontSize: 26, fontFamily: "'Syne', sans-serif", fontWeight: 700, marginBottom: 12 }}>
+        Enable location 🗺️
+      </div>
+      <div style={{ color: T.textSub, fontSize: 14, lineHeight: 1.7, maxWidth: 280 }}>
+        Aura uses your location to show people nearby. We <strong>never</strong> share exact coordinates — only approximate distance.
+      </div>
+
+      <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 10, width: "100%", textAlign: "left" }}>
+        {[
+          { icon: "📡", text: "Distance shown as ~50m, ~200m etc." },
+          { icon: "🔒", text: "Location fuzzed by 100-500m randomly" },
+          { icon: "⏱️", text: "Updates only when app is open" },
+          { icon: "🚫", text: "Never sold or shared with third parties" },
+        ].map((item) => (
+          <GlassCard key={item.text} style={{ padding: "12px 16px", display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 18 }}>{item.icon}</span>
+            <span style={{ fontSize: 13, color: T.textSub }}>{item.text}</span>
+          </GlassCard>
+        ))}
+      </div>
+    </div>
+
+    <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 10 }}>
+      <NeonButton onClick={onNext}>Allow Location Access</NeonButton>
+      <NeonButton variant="outline" onClick={onNext}>
+        Not now
+      </NeonButton>
+    </div>
+  </div>
+);
+
+// DISCOVER SCREEN
+const DiscoverScreen = () => {
+  const [filter, setFilter] = useState(false);
+  const [swipingIdx, setSwipingIdx] = useState(null);
+  const [swipeDir, setSwipeDir] = useState(null);
+  const [dismissed, setDismissed] = useState([]);
+
+  const people = [
+    { seed: 0, age: "24", dist: "~80m", mood: "Open to chat", interests: ["Music 🎵", "Art 🎨", "Travel ✈️"], compat: 87 },
+    { seed: 1, age: "27", dist: "~150m", mood: "Just browsing", interests: ["Coffee ☕", "Books 📚", "Photography 📸"], compat: 74 },
+    { seed: 2, age: "23", dist: "~200m", mood: "Networking", interests: ["Tech 💻", "Gaming 🎮", "Fitness 💪"], compat: 91 },
+    { seed: 3, age: "26", dist: "~300m", mood: "Open to chat", interests: ["Dance 💃", "Movies 🎬", "Food 🍜"], compat: 68 },
+  ].filter((_, i) => !dismissed.includes(i));
+
+  const swipe = (dir, idx) => {
+    setSwipingIdx(idx);
+    setSwipeDir(dir);
+    setTimeout(() => {
+      setDismissed((prev) => [...prev, idx]);
+      setSwipingIdx(null);
+      setSwipeDir(null);
+    }, 400);
+  };
+
+  const moodColor = { "Open to chat": T.green, "Just browsing": T.amber, Networking: T.teal };
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: T.bg, display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <div style={{ padding: "56px 24px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <div style={{ fontSize: 24, fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>Nearby ✦</div>
+          <div style={{ fontSize: 12, color: T.textMuted, marginTop: 2 }}>
+            <span style={{ color: T.green }}>●</span> {people.length + dismissed.length} people around you
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <GlassCard
+            onClick={() => setFilter(!filter)}
+            style={{
+              padding: "10px 14px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              border: `1px solid ${filter ? T.neon : T.border}`,
+              background: filter ? T.neonSoft : T.bgGlass,
+            }}
+          >
+            <span style={{ fontSize: 14 }}>⚙</span>
+            <span style={{ fontSize: 12, color: filter ? T.neon : T.textMuted }}>Filter</span>
+          </GlassCard>
+        </div>
+      </div>
+
+      {/* Filter panel */}
+      {filter && (
+        <div className="anim-fade-up" style={{ padding: "0 24px 16px" }}>
+          <GlassCard style={{ padding: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Age Range</div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              {["18-22", "22-26", "26-30", "30+"].map((r) => (
+                <button
+                  key={r}
+                  className="btn-press"
+                  style={{
+                    flex: 1,
+                    padding: "8px 4px",
+                    borderRadius: 8,
+                    border: `1px solid ${T.border}`,
+                    background: T.bgGlass,
+                    color: T.textSub,
+                    fontSize: 11,
+                    cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 10 }}>Distance</div>
+            <div style={{ display: "flex", gap: 8 }}>
+              {["<100m", "<500m", "<1km"].map((d) => (
+                <button
+                  key={d}
+                  className="btn-press"
+                  style={{
+                    flex: 1,
+                    padding: "8px 4px",
+                    borderRadius: 8,
+                    border: `1px solid ${T.neon}`,
+                    background: T.neonSoft,
+                    color: T.neon,
+                    fontSize: 11,
+                    cursor: "pointer",
+                    fontFamily: "'DM Sans', sans-serif",
+                  }}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* Cards */}
+      <div style={{ flex: 1, overflow: "auto", padding: "0 24px 100px", display: "flex", flexDirection: "column", gap: 14 }}>
+        {people.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "60px 0", color: T.textMuted }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>✨</div>
+            <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 6 }}>You've seen everyone!</div>
+            <div style={{ fontSize: 13 }}>Check back soon for new people</div>
+          </div>
+        ) : (
+          people.map((p, i) => (
+            <GlassCard
+              key={i}
+              style={{
+                overflow: "hidden",
+                cursor: "pointer",
+                animation:
+                  swipingIdx === i
+                    ? swipeDir === "right"
+                      ? "cardSwipeRight 0.4s ease forwards"
+                      : "cardSwipeLeft 0.4s ease forwards"
+                    : "scaleIn 0.3s ease both",
+                animationDelay: swipingIdx === i ? "0s" : `${i * 0.08}s`,
+              }}
+            >
+              {/* Card inner */}
+              <div style={{ padding: 20 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                  <Avatar seed={p.seed} size={64} blur verified />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 17, fontWeight: 700 }}>Age {p.age}</span>
+                      <Badge color={T.neon} style={{ fontSize: 10 }}>✓ AI Verified</Badge>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 11, color: T.textMuted }}>📍 {p.dist}</span>
+                      <span style={{ color: T.border }}>·</span>
+                      <span style={{ fontSize: 11, color: moodColor[p.mood] }}>● {p.mood}</span>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 12,
+                      background: `conic-gradient(${T.neon} ${p.compat}%, transparent 0)`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      position: "relative",
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: "absolute",
+                        inset: 4,
+                        borderRadius: 8,
+                        background: T.bg,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: T.neon,
+                      }}
+                    >
+                      {p.compat}%
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+                  {p.interests.map((int) => (
+                    <Badge key={int} color={T.textSub} style={{ fontSize: 11 }}>
+                      {int}
+                    </Badge>
+                  ))}
+                </div>
+
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button
+                    className="btn-press"
+                    onClick={() => swipe("left", i)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      borderRadius: 12,
+                      border: `1px solid ${T.border}`,
+                      background: T.bgGlass,
+                      color: T.textMuted,
+                      fontSize: 18,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ✕
+                  </button>
+                  <button
+                    className="btn-press"
+                    onClick={() => swipe("right", i)}
+                    style={{
+                      flex: 2,
+                      padding: "12px",
+                      borderRadius: 12,
+                      border: "none",
+                      background: `linear-gradient(135deg, ${T.neon}, #6D28D9)`,
+                      color: "#fff",
+                      fontSize: 14,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      fontFamily: "'DM Sans', sans-serif",
+                      boxShadow: `0 4px 20px ${T.neonGlow}`,
+                    }}
+                  >
+                    ✦ Send Connect
+                  </button>
+                  <button
+                    className="btn-press"
+                    onClick={() => swipe("right", i)}
+                    style={{
+                      flex: 1,
+                      padding: "12px",
+                      borderRadius: 12,
+                      border: `1px solid ${T.border}`,
+                      background: T.bgGlass,
+                      color: T.pink,
+                      fontSize: 18,
+                      cursor: "pointer",
+                    }}
+                  >
+                    ♡
+                  </button>
+                </div>
+              </div>
+            </GlassCard>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+// REQUESTS SCREEN
+const RequestsScreen = () => {
+  const [tab, setTab] = useState("received");
+  const [verified, setVerified] = useState(false);
+  const [selected, setSelected] = useState(null);
+
+  const requests = [
+    { seed: 0, age: "25", compat: 91, interests: ["Music 🎵", "Art 🎨"], verified: true, dist: "~90m" },
+    { seed: 2, age: "23", compat: 76, interests: ["Tech 💻", "Gaming 🎮"], verified: true, dist: "~200m" },
+    { seed: 4, age: "28", compat: 63, interests: ["Fitness 💪", "Food 🍜"], verified: false, dist: "~400m" },
+  ];
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: T.bg, display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "56px 24px 16px" }}>
+        <div style={{ fontSize: 24, fontFamily: "'Syne', sans-serif", fontWeight: 700, marginBottom: 16 }}>
+          Connections ◎
+        </div>
+        {/* Sub tabs */}
+        <div style={{ display: "flex", gap: 0, background: T.bgGlass, borderRadius: 12, padding: 4, border: `1px solid ${T.border}` }}>
+          {["received", "sent"].map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className="btn-press"
+              style={{
+                flex: 1,
+                padding: "10px",
+                borderRadius: 9,
+                border: "none",
+                background: tab === t ? T.neon : "none",
+                color: tab === t ? "#fff" : T.textMuted,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif",
+                transition: "all 0.2s ease",
+                boxShadow: tab === t ? `0 2px 12px ${T.neonGlow}` : "none",
+                textTransform: "capitalize",
+              }}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflow: "auto", padding: "0 24px 100px", display: "flex", flexDirection: "column", gap: 14 }}>
+        {requests.map((r, i) => (
+          <GlassCard
+            key={i}
+            onClick={() => setSelected(selected === i ? null : i)}
+            style={{ padding: 20, cursor: "pointer" }}
+          >
+            <div style={{ display: "flex", gap: 14, alignItems: "center", marginBottom: selected === i ? 16 : 0 }}>
+              <div style={{ position: "relative" }}>
+                <Avatar seed={r.seed} size={56} blur={!verified} />
+                {!r.verified && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: "50%",
+                      backdropFilter: "blur(4px)",
+                      WebkitBackdropFilter: "blur(4px)",
+                    }}
+                  />
+                )}
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                  <span style={{ fontWeight: 700 }}>Age {r.age}</span>
+                  {r.verified && <Badge color={T.green}>✓ Verified</Badge>}
+                </div>
+                <div style={{ fontSize: 12, color: T.textMuted }}>📍 {r.dist} · {r.compat}% match</div>
+              </div>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: T.neon,
+                  fontWeight: 600,
+                  transform: selected === i ? "rotate(180deg)" : "rotate(0)",
+                  transition: "transform 0.2s ease",
+                }}
+              >
+                ▾
+              </div>
+            </div>
+
+            {selected === i && (
+              <div className="anim-fade-up">
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 14 }}>
+                  {r.interests.map((int) => (
+                    <Badge key={int}>{int}</Badge>
+                  ))}
+                </div>
+
+                {/* Verification options */}
+                {!verified && (
+                  <GlassCard style={{ padding: 14, marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 10, color: T.textMuted }}>
+                      Verify before accepting
+                    </div>
+                    <button
+                      className="btn-press"
+                      onClick={() => setVerified(true)}
+                      style={{
+                        width: "100%",
+                        padding: "12px",
+                        borderRadius: 10,
+                        border: `1px solid ${T.amber}`,
+                        background: `${T.amber}18`,
+                        color: T.amber,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    >
+                      🤳 5-sec Live Selfie Check
+                    </button>
+                  </GlassCard>
+                )}
+
+                <div style={{ display: "flex", gap: 10 }}>
+                  <NeonButton variant="outline" style={{ flex: 1 }}>
+                    Decline
+                  </NeonButton>
+                  <NeonButton style={{ flex: 2 }}>
+                    Accept & Reveal ✦
+                  </NeonButton>
+                </div>
+              </div>
+            )}
+          </GlassCard>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// CHAT LIST
+const ChatListScreen = ({ onOpen }) => {
+  const chats = [
+    { seed: 0, name: "Arya R.", last: "Hey! Loved your taste in music 🎵", time: "2m", unread: 3 },
+    { seed: 2, name: "Kabir S.", last: "Are you at the same café rn?", time: "14m", unread: 1 },
+    { seed: 4, name: "Priya M.", last: "Haha true! Small world 😄", time: "1h", unread: 0 },
+    { seed: 1, name: "Neel R.", last: "That exhibit was amazing!", time: "3h", unread: 0 },
+  ];
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: T.bg, display: "flex", flexDirection: "column" }}>
+      <div style={{ padding: "56px 24px 16px" }}>
+        <div style={{ fontSize: 24, fontFamily: "'Syne', sans-serif", fontWeight: 700, marginBottom: 4 }}>
+          Messages ◈
+        </div>
+        <div style={{ fontSize: 12, color: T.textMuted }}>{chats.filter((c) => c.unread).length} unread</div>
+      </div>
+
+      {/* Search */}
+      <div style={{ padding: "0 24px 16px" }}>
+        <GlassCard style={{ padding: "4px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ color: T.textMuted }}>🔍</span>
+          <input placeholder="Search conversations..." style={{ flex: 1, fontSize: 14, padding: "12px 0" }} />
+        </GlassCard>
+      </div>
+
+      <div style={{ flex: 1, overflow: "auto", padding: "0 0 100px" }}>
+        {chats.map((c, i) => (
+          <div
+            key={i}
+            className="btn-press"
+            onClick={() => onOpen(c)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              padding: "14px 24px",
+              cursor: "pointer",
+              borderBottom: `1px solid ${T.border}`,
+              background: c.unread ? `${T.neonSoft}` : "transparent",
+              transition: "background 0.2s ease",
+            }}
+          >
+            <Avatar seed={c.seed} size={52} verified active={i < 2} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                <span style={{ fontWeight: 600, fontSize: 15 }}>{c.name}</span>
+                <span style={{ fontSize: 11, color: T.textMuted }}>{c.time}</span>
+              </div>
+              <div style={{ fontSize: 13, color: c.unread ? T.textSub : T.textMuted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {c.last}
+              </div>
+            </div>
+            {c.unread > 0 && (
+              <div
+                style={{
+                  width: 20,
+                  height: 20,
+                  borderRadius: "50%",
+                  background: T.neon,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                {c.unread}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// CHAT DETAIL
+const ChatDetailScreen = ({ chat, onBack }) => {
+  const [msg, setMsg] = useState("");
+  const [messages, setMessages] = useState([
+    { text: "Hey! I think we matched at the café 😊", mine: false, time: "2:14 PM" },
+    { text: "Haha yes! I saw you reading that book", mine: true, time: "2:15 PM" },
+    { text: "What are the odds 😂 Love that author btw", mine: false, time: "2:16 PM" },
+    { text: "Same! We have very similar taste it seems 🎵", mine: true, time: "2:17 PM" },
+  ]);
+  const [disappearing, setDisappearing] = useState(false);
+  const [typing, setTyping] = useState(false);
+  const endRef = useRef();
+
+  const send = () => {
+    if (!msg.trim()) return;
+    setMessages((prev) => [...prev, { text: msg, mine: true, time: "now" }]);
+    setMsg("");
+    setTyping(true);
+    setTimeout(() => {
+      setTyping(false);
+      setMessages((prev) => [...prev, { text: "That's so cool! We should grab coffee ☕", mine: false, time: "now" }]);
+    }, 1800);
+  };
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: T.bg, display: "flex", flexDirection: "column" }}>
+      {/* Header */}
+      <div
+        style={{
+          padding: "52px 20px 14px",
+          background: "rgba(10,10,15,0.95)",
+          backdropFilter: "blur(20px)",
+          borderBottom: `1px solid ${T.border}`,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+        }}
+      >
+        <button className="btn-press" onClick={onBack} style={{ background: "none", border: "none", color: T.textMuted, fontSize: 20, cursor: "pointer", padding: "4px 8px 4px 0" }}>
+          ←
+        </button>
+        <Avatar seed={chat.seed} size={40} active verified />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: 15 }}>{chat.name}</div>
+          <div style={{ fontSize: 11, color: T.green }}>● Active now</div>
+        </div>
+        <div style={{ display: "flex", gap: 12 }}>
+          <button
+            className="btn-press"
+            onClick={() => setDisappearing(!disappearing)}
+            style={{
+              background: "none",
+              border: "none",
+              fontSize: 16,
+              cursor: "pointer",
+              color: disappearing ? T.neon : T.textMuted,
+              filter: disappearing ? `drop-shadow(0 0 4px ${T.neon})` : "none",
+            }}
+            title="Disappearing messages"
+          >
+            ⏱
+          </button>
+          <button className="btn-press" style={{ background: "none", border: "none", fontSize: 16, cursor: "pointer", color: T.red }}>
+            ⚑
+          </button>
+        </div>
+      </div>
+
+      {disappearing && (
+        <div style={{ background: T.neonSoft, padding: "8px 20px", fontSize: 11, color: T.neon, textAlign: "center" }}>
+          ⏱ Disappearing messages ON · Messages delete after 24h
+        </div>
+      )}
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflow: "auto", padding: "20px 20px 0" }}>
+        {messages.map((m, i) => (
+          <div
+            key={i}
+            style={{
+              display: "flex",
+              justifyContent: m.mine ? "flex-end" : "flex-start",
+              marginBottom: 12,
+              animation: "messageIn 0.3s ease both",
+            }}
+          >
+            {!m.mine && <Avatar seed={chat.seed} size={28} style={{ marginRight: 8, alignSelf: "flex-end" }} />}
+            <div>
+              <div
+                style={{
+                  maxWidth: 240,
+                  padding: "12px 16px",
+                  borderRadius: m.mine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                  background: m.mine
+                    ? `linear-gradient(135deg, ${T.neon}, #6D28D9)`
+                    : T.bgGlass,
+                  border: m.mine ? "none" : `1px solid ${T.border}`,
+                  fontSize: 14,
+                  lineHeight: 1.5,
+                  boxShadow: m.mine ? `0 4px 20px ${T.neonSoft}` : "none",
+                }}
+              >
+                {m.text}
+              </div>
+              <div style={{ fontSize: 10, color: T.textMuted, marginTop: 4, textAlign: m.mine ? "right" : "left", paddingLeft: 4, paddingRight: 4 }}>
+                {m.mine ? "✓✓ " : ""}{m.time}
+              </div>
+            </div>
+          </div>
+        ))}
+        {typing && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+            <Avatar seed={chat.seed} size={28} />
+            <GlassCard style={{ padding: "10px 16px", display: "flex", gap: 4, alignItems: "center" }}>
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: T.textMuted,
+                    animation: `ping 1.2s ${i * 0.2}s infinite`,
+                  }}
+                />
+              ))}
+            </GlassCard>
+          </div>
+        )}
+        <div ref={endRef} />
+      </div>
+
+      {/* Input */}
+      <div
+        style={{
+          padding: "12px 16px 32px",
+          background: "rgba(10,10,15,0.95)",
+          backdropFilter: "blur(20px)",
+          borderTop: `1px solid ${T.border}`,
+          display: "flex",
+          gap: 10,
+          alignItems: "flex-end",
+        }}
+      >
+        <button className="btn-press" style={{ background: "none", border: "none", fontSize: 20, cursor: "pointer", color: T.textMuted, padding: "10px 4px" }}>
+          +
+        </button>
+        <GlassCard style={{ flex: 1, padding: "4px 16px" }}>
+          <input
+            placeholder="Type a message..."
+            value={msg}
+            onChange={(e) => setMsg(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && send()}
+            style={{ fontSize: 14, padding: "10px 0", width: "100%" }}
+          />
+        </GlassCard>
+        <button
+          className="btn-press"
+          onClick={send}
+          style={{
+            width: 44,
+            height: 44,
+            borderRadius: 12,
+            background: msg.trim() ? `linear-gradient(135deg, ${T.neon}, #6D28D9)` : T.bgGlass,
+            border: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            fontSize: 18,
+            transition: "all 0.2s ease",
+            boxShadow: msg.trim() ? `0 4px 16px ${T.neonGlow}` : "none",
+          }}
+        >
+          ➤
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// PROFILE SCREEN
+const ProfileScreen = () => {
+  const [premium, setPremium] = useState(false);
+
+  return (
+    <div style={{ position: "absolute", inset: 0, background: T.bg, overflow: "auto" }}>
+      <div style={{ padding: "56px 24px 120px" }}>
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
+          <div style={{ fontSize: 24, fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>Profile ◉</div>
+          <button className="btn-press" style={{ background: "none", border: "none", color: T.textMuted, cursor: "pointer", fontSize: 20 }}>⚙</button>
+        </div>
+
+        {/* Profile card */}
+        <GlassCard style={{ padding: 24, marginBottom: 20 }}>
+          <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+            <div style={{ position: "relative" }}>
+              <Avatar seed={3} size={80} />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: -4,
+                  right: -4,
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: T.neon,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 14,
+                  border: `2px solid ${T.bg}`,
+                  cursor: "pointer",
+                }}
+              >
+                ✎
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <span style={{ fontSize: 20, fontWeight: 700, fontFamily: "'Syne', sans-serif" }}>Rohan D.</span>
+                <Badge color={T.green}>✓ Verified</Badge>
+              </div>
+              <div style={{ fontSize: 13, color: T.textMuted, marginBottom: 8 }}>26 · Bengaluru</div>
+              <div style={{ fontSize: 13, color: T.textSub, lineHeight: 1.5 }}>
+                Music lover & late-night café person. Always up for deep conversations.
+              </div>
+            </div>
+          </div>
+
+          {/* Trust Score */}
+          <div
+            style={{
+              marginTop: 20,
+              padding: "14px 16px",
+              borderRadius: 14,
+              background: T.neonSoft,
+              border: `1px solid ${T.neon}44`,
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Trust Score</span>
+              <span style={{ fontSize: 18, fontWeight: 800, color: T.neon, fontFamily: "'Syne', sans-serif" }}>94</span>
+            </div>
+            <div style={{ height: 6, borderRadius: 6, background: T.border, overflow: "hidden" }}>
+              <div
+                style={{
+                  height: "100%",
+                  width: "94%",
+                  borderRadius: 6,
+                  background: `linear-gradient(90deg, ${T.neon}, ${T.pink})`,
+                  boxShadow: `0 0 10px ${T.neonGlow}`,
+                }}
+              />
+            </div>
+            <div style={{ fontSize: 11, color: T.textMuted, marginTop: 6 }}>
+              ✓ Face verified · ✓ Phone verified · ✓ Active user
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* Stats */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
+          {[{ label: "Matches", value: "12" }, { label: "Requests", value: "5" }, { label: "Viewed", value: "48" }].map(
+            (s) => (
+              <GlassCard key={s.label} style={{ padding: "16px 12px", textAlign: "center" }}>
+                <div style={{ fontSize: 22, fontWeight: 800, fontFamily: "'Syne', sans-serif", color: T.neon }}>{s.value}</div>
+                <div style={{ fontSize: 11, color: T.textMuted, marginTop: 2 }}>{s.label}</div>
+              </GlassCard>
+            )
+          )}
+        </div>
+
+        {/* Premium CTA */}
+        {!premium && (
+          <GlassCard
+            style={{
+              padding: 20,
+              marginBottom: 20,
+              background: `linear-gradient(135deg, ${T.neon}22, ${T.pink}22)`,
+              border: `1px solid ${T.neon}44`,
+              cursor: "pointer",
+            }}
+            onClick={() => setPremium(true)}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>✦ Go Premium</div>
+              <Badge color={T.neon}>₹399/mo</Badge>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {["Unlimited connect requests", "See who viewed you", "Incognito mode", "Priority visibility", "Advanced filters"].map((f) => (
+                <div key={f} style={{ fontSize: 12, color: T.textSub, display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ color: T.neon }}>✓</span> {f}
+                </div>
+              ))}
+            </div>
+            <NeonButton style={{ marginTop: 14 }}>Upgrade Now →</NeonButton>
+          </GlassCard>
+        )}
+
+        {/* Menu */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {[
+            { icon: "🛡️", label: "Privacy Settings" },
+            { icon: "🚨", label: "Panic Button", color: T.red },
+            { icon: "🕶", label: "Incognito Mode" },
+            { icon: "📊", label: "My Interests" },
+            { icon: "🚫", label: "Blocked Users" },
+            { icon: "🗑", label: "Delete Account", color: T.red },
+          ].map((item) => (
+            <GlassCard
+              key={item.label}
+              style={{
+                padding: "16px 20px",
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                cursor: "pointer",
+                marginBottom: 2,
+              }}
+            >
+              <span style={{ fontSize: 18 }}>{item.icon}</span>
+              <span style={{ flex: 1, fontSize: 14, color: item.color || T.text }}>{item.label}</span>
+              <span style={{ color: T.textMuted, fontSize: 14 }}>›</span>
+            </GlassCard>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+export default function App() {
+  const [screen, setScreen] = useState("splash");
+  const [tab, setTab] = useState("discover");
+  const [openChat, setOpenChat] = useState(null);
+  const showTabs = screen === "main";
+
+  const onboardingFlow = [
+    "splash", "welcome", "otp", "faceVerify", "basicInfo", "privacy", "location", "main"
+  ];
+
+  const goNext = () => {
+    const cur = onboardingFlow.indexOf(screen);
+    if (cur < onboardingFlow.length - 1) setScreen(onboardingFlow[cur + 1]);
+  };
+
+  const renderScreen = () => {
+    if (screen === "splash") return <SplashScreen onDone={goNext} />;
+    if (screen === "welcome") return <WelcomeScreen onSignup={goNext} onLogin={goNext} />;
+    if (screen === "otp") return <OTPScreen onNext={goNext} />;
+    if (screen === "faceVerify") return <FaceVerifyScreen onNext={goNext} />;
+    if (screen === "basicInfo") return <BasicInfoScreen onNext={goNext} />;
+    if (screen === "privacy") return <PrivacyScreen onNext={goNext} />;
+    if (screen === "location") return <LocationScreen onNext={goNext} />;
+
+    if (screen === "main") {
+      if (openChat)
+        return <ChatDetailScreen chat={openChat} onBack={() => setOpenChat(null)} />;
+      if (tab === "discover") return <DiscoverScreen />;
+      if (tab === "requests") return <RequestsScreen />;
+      if (tab === "chat") return <ChatListScreen onOpen={(c) => setOpenChat(c)} />;
+      if (tab === "profile") return <ProfileScreen />;
+    }
+  };
+
+  return (
+    <>
+      <style>{globalCSS}</style>
+      <div
+        style={{
+          width: "100%",
+          height: "100vh",
+          background: T.bg,
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            width: 390,
+            height: 844,
+            background: T.bg,
+            borderRadius: 44,
+            overflow: "hidden",
+            position: "relative",
+            boxShadow: `0 0 0 1px ${T.border}, 0 40px 120px rgba(0,0,0,0.8), 0 0 60px ${T.neonSoft}`,
+          }}
+        >
+          {/* Status bar */}
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 44,
+              zIndex: 200,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "0 24px",
+              pointerEvents: "none",
+            }}
+          >
+            <span style={{ fontSize: 12, fontWeight: 600 }}>9:41</span>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <span style={{ fontSize: 11 }}>▬▬▬</span>
+              <span style={{ fontSize: 11 }}>🛜</span>
+              <span style={{ fontSize: 11 }}>🔋</span>
+            </div>
+          </div>
+
+          {/* Screens */}
+          <div style={{ position: "absolute", inset: 0 }}>{renderScreen()}</div>
+
+          {/* Tab bar */}
+          {showTabs && !openChat && <TabBar tab={tab} setTab={setTab} />}
+
+          {/* Onboarding nav hint */}
+          {screen !== "splash" && screen !== "main" && (
+            <div
+              style={{
+                position: "absolute",
+                top: 52,
+                left: 24,
+                zIndex: 300,
+              }}
+            >
+              <button
+                className="btn-press"
+                onClick={() => {
+                  const cur = onboardingFlow.indexOf(screen);
+                  if (cur > 1) setScreen(onboardingFlow[cur - 1]);
+                }}
+                style={{
+                  background: T.bgGlass,
+                  border: `1px solid ${T.border}`,
+                  borderRadius: 12,
+                  color: T.textMuted,
+                  fontSize: 16,
+                  cursor: "pointer",
+                  padding: "6px 12px",
+                }}
+              >
+                ←
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
